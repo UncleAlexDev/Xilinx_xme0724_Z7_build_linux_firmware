@@ -1,0 +1,9 @@
+//arch = zynq; split = false; format = BIN
+The_ROM:
+{
+        [bootloader]fsbl.elf
+        bitstream.bit
+        u-boot.elf
+        [offset=0xfc0000]boot.scr.sd.bin
+}
+

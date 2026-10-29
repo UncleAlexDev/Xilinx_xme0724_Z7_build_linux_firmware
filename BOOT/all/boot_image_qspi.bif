@@ -1,0 +1,14 @@
+//arch = zynq; split = false; format = BIN
+The_ROM:
+{
+        [bootloader]fsbl.elf
+        bitstream.bit
+        u-boot.elf
+        [offset=0xfc0000]boot.scr.qspi.bin
+
+//      [load=0x2a00000]devicetree.dtb
+//      [load=0x2000000]uramdisk.image.gz
+//      [load=0x3000000]uImage.bin   // currently bootgen requires a file extension. this is just a renamed uImage
+
+}
+
