@@ -18,8 +18,8 @@ LINUX_VER="linux-xlnx-v2023.2"
 # v2025 не получается использозвать
 # "cdns,zynq-gem" - там при загрузке драйвера сети долгий поиск по регистрам mdiobus read-c45 - 40 сек.
 # неприемлемо :(
-# LINUX_ARC="linux-xlnx-branch-v2025.2.tar.bz2"
-# LINUX_VER="linux-xlnx-v2025.2"
+# LINUX_ARC="linux-xlnx-branch-v2025.1.tar.bz2"
+# LINUX_VER="linux-xlnx-v2025.1"
 
 LINUX="linux-xlnx"
 

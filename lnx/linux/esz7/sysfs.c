@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * \brief  sysfs operations for Z7 driver
+ * \brief  sysfs operations for ESZ7 driver
  * \author Aleksey Lekhtin
  * \date   2025-09-25
- * \copyright Copyright 2024-2025
+ * \copyright Copyright 2024-2025 E-Service. Miass. Che.
  */
 
 #define DEBUG 1
@@ -14,7 +14,7 @@
 #include <linux/string.h>
 #include <linux/sysfs.h>
 
-#include "z7.h"
+#include "esz7.h"
 
 static ssize_t event1_show(struct device *dev, struct device_attribute *attr,
 			   char *buf)
@@ -80,10 +80,10 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
 			 char *buf)
 {
 	ssize_t len;
-	struct Z7 *z7 = dev_get_drvdata(dev);
+	struct ESZ7 *esz7 = dev_get_drvdata(dev);
 
 	mutex_lock(&dev->mutex);
-	len = sysfs_emit(buf, "%s\n", z7->of_name);
+	len = sysfs_emit(buf, "%s\n", esz7->of_name);
 	mutex_unlock(&dev->mutex);
 	return len;
 }
@@ -95,17 +95,17 @@ static ssize_t version_show(struct device *dev, struct device_attribute *attr,
 	char *buffer;
 	size_t buffersz;
 	struct seq_buf seq_buffer;
-	struct Z7 *z7 = dev_get_drvdata(dev);
+	struct ESZ7 *esz7 = dev_get_drvdata(dev);
 
 	mutex_lock(&dev->mutex);
 	// sizeof(int) by 11 symbols for each
-	buffersz = ARRAY_SIZE(z7->of_interrupts) * 11;
+	buffersz = ARRAY_SIZE(esz7->of_interrupts) * 11;
 	buffer = kzalloc(buffersz, GFP_KERNEL);
 	if (buffer) {
 		seq_buf_init(&seq_buffer, buffer, buffersz);
-		for (int i = 0; i < ARRAY_SIZE(z7->of_interrupts); i++)
+		for (int i = 0; i < ARRAY_SIZE(esz7->of_interrupts); i++)
 			seq_buf_printf(&seq_buffer, "%d ",
-				       z7->of_interrupts[i]);
+				       esz7->of_interrupts[i]);
 		seq_buffer.buffer[seq_buffer.len - 1] = '\0';
 	}
 
@@ -116,8 +116,8 @@ static ssize_t version_show(struct device *dev, struct device_attribute *attr,
 			 "compatible: %s\n"
 			 "regs: 0x%08X\n"
 			 "interrupts: %s\n",
-			 MODULE_NAME, MODULE_VERS, z7->of_name,
-			 z7->of_version, z7->of_compatible, z7->of_reg,
+			 MODULE_NAME, MODULE_VERS, esz7->of_name,
+			 esz7->of_version, esz7->of_compatible, esz7->of_reg,
 			 seq_buffer.buffer);
 	kfree(buffer);
 	mutex_unlock(&dev->mutex);
@@ -128,10 +128,10 @@ static ssize_t compatible_show(struct device *dev,
 			       struct device_attribute *attr, char *buf)
 {
 	ssize_t len;
-	struct Z7 *z7 = dev_get_drvdata(dev);
+	struct ESZ7 *esz7 = dev_get_drvdata(dev);
 
 	mutex_lock(&dev->mutex);
-	len = sysfs_emit(buf, "%s\n", z7->of_compatible);
+	len = sysfs_emit(buf, "%s\n", esz7->of_compatible);
 	mutex_unlock(&dev->mutex);
 	return len;
 }
@@ -140,10 +140,10 @@ static ssize_t reg_show(struct device *dev, struct device_attribute *attr,
 			char *buf)
 {
 	ssize_t len;
-	struct Z7 *z7 = dev_get_drvdata(dev);
+	struct ESZ7 *esz7 = dev_get_drvdata(dev);
 
 	mutex_lock(&dev->mutex);
-	len = sysfs_emit(buf, "%08x\n", z7->of_reg);
+	len = sysfs_emit(buf, "%08x\n", esz7->of_reg);
 	mutex_unlock(&dev->mutex);
 	return len;
 }
@@ -155,17 +155,17 @@ static ssize_t interrupts_show(struct device *dev,
 	char *buffer;
 	size_t buffersz;
 	struct seq_buf seq_buffer;
-	struct Z7 *z7 = dev_get_drvdata(dev);
+	struct ESZ7 *esz7 = dev_get_drvdata(dev);
 
 	mutex_lock(&dev->mutex);
 	// sizeof(int) by 11 symbols for each
-	buffersz = ARRAY_SIZE(z7->of_interrupts) * 11;
+	buffersz = ARRAY_SIZE(esz7->of_interrupts) * 11;
 	buffer = kzalloc(buffersz, GFP_KERNEL);
 	if (buffer) {
 		seq_buf_init(&seq_buffer, buffer, buffersz);
-		for (int i = 0; i < ARRAY_SIZE(z7->of_interrupts); i++)
+		for (int i = 0; i < ARRAY_SIZE(esz7->of_interrupts); i++)
 			seq_buf_printf(&seq_buffer, "%d ",
-				       z7->of_interrupts[i]);
+				       esz7->of_interrupts[i]);
 		seq_buffer.buffer[seq_buffer.len - 1] = '\0';
 	}
 
@@ -207,7 +207,7 @@ static DEVICE_ATTR_RO(compatible);
 static DEVICE_ATTR_RO(interrupts);
 static DEVICE_ATTR_RW(debuglevel);
 
-static struct attribute *z7_attrs[] = {
+static struct attribute *esz7_attrs[] = {
 	&dev_attr_event1.attr,
 	&dev_attr_event2.attr,
 	&dev_attr_event3.attr,
@@ -220,13 +220,13 @@ static struct attribute *z7_attrs[] = {
 	&dev_attr_debuglevel.attr,
 	NULL,
 };
-ATTRIBUTE_GROUPS(z7); // => z7_groups
+ATTRIBUTE_GROUPS(esz7); // => esz7_groups
 
-int z7_create_sysfs_attributes(struct device *dev)
+int esz7_create_sysfs_attributes(struct device *dev)
 {
 	int err;
 
-	err = sysfs_create_groups(&dev->kobj, z7_groups);
+	err = sysfs_create_groups(&dev->kobj, esz7_groups);
 	if (err) {
 		pr_info("sysfs_create_groups() failed. err: %d\n", err);
 		return err;
@@ -234,8 +234,8 @@ int z7_create_sysfs_attributes(struct device *dev)
 	return 0;
 }
 
-void z7_remove_sysfs_attributes(struct device *dev)
+void esz7_remove_sysfs_attributes(struct device *dev)
 {
 	//DBG(1, "%s", "\n");
-	sysfs_remove_groups(&dev->kobj, z7_groups);
+	sysfs_remove_groups(&dev->kobj, esz7_groups);
 }

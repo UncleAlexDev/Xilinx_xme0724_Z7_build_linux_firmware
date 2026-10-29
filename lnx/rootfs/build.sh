@@ -28,9 +28,6 @@ function make_rootfs_image()
     echo "-- копирование файлов из ${ROOTFS_ARCH} в \"${ROOTFSIMGDIR}\" ... "
     rm -rfv ${ROOTFSIMGDIR}/* &>/dev/null
     sudo tar --directory ${ROOTFSIMGDIR} -xjf ${ROOTFS_ARCH} || return 1
-    #sudo chown -R root:root ${ROOTFSIMGDIR}/*
-    #sudo find ${ROOTFSIMGDIR} -type d -exec chmod g+rx,o+rx {} \;
-    #sudo find ${ROOTFSIMGDIR} -type f -exec chmod g+r,o+r {} \;
 
     # debug
     #rm -rf /tmp/rootfs-tmp &>/dev/null

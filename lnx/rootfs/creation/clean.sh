@@ -10,3 +10,5 @@ for fn in $(ls -d */ 2>/dev/null) ; do
 done
 
 rm -fv rootfs.tar.bz2
+rm -fv rootfs-template.tar.*.bak
+rm -fv changes.dif

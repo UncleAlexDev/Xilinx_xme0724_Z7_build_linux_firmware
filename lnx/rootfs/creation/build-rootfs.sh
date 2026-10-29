@@ -29,7 +29,6 @@ for dn in ${PACKAGES[*]} ; do
 done
 [ $ok -ne 1 ] && exit 1
 
-set -x
 rm -rf ${ROOTFS}
 mkdir -p ${ROOTFS}
 
@@ -40,12 +39,15 @@ tar xjf ${ROOTFS_TEMPLATE} || exit 1
 if [ ! -f "${ROOTFS_ISSUE}" ]; then
     echo "Ver. 1.0.0 $(date '+%b %e %Y')" > "${ROOTFS_ISSUE}"
 fi
-VER=$(head -n 1 "${ROOTFS_ISSUE}")
+VER=$(head -n 1 "${ROOTFS_ISSUE}" | cut -d' ' -f 1-2)
+NEWVER=$(echo "$VER" | awk '{split($2, v, "."); $2 = v[1]"."v[2]"."v[3]+1; print}')
+echo -e "${NEWVER} $(date '+%b %e %Y')\n" > "${ROOTFS_ISSUE}"
 
-NEWVER=$(echo "$VER" | awk '{
-            split($2, v, "."); $2 = v[1]"."v[2]"."v[3]+1; print
-         }')
-echo -e "${NEWVER}\n" > "${ROOTFS_ISSUE}"
+base_name="$(echo ${ROOTFS_TEMPLATE} | cut -d '.' -f 1)"
+ext="$(echo ${ROOTFS_TEMPLATE} | cut -d '.' -f 2-)"
+#mv ${ROOTFS_TEMPLATE} ${ROOTFS_TEMPLATE}-$(date '+%Y%m%d-%H%M%S').bak
+mv "${ROOTFS_TEMPLATE}" ${base_name}-$(date '+%Y%m%d-%H%M%S').${ext}
+tar cjf ${ROOTFS_TEMPLATE} rootfs || exit 1
 
 if which git; then
     FNLIST=$(git status | grep "modified:" | grep -v "../" | awk '{print $2}')

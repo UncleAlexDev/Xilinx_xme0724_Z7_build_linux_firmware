@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- *  \brief  Z7 driver
+ *  \brief  ESZ7 driver
  *  \author Aleksey Lekhtin
  *  \date   2025-09-25
- *  \copyright Copyright 2024-2025
+ *  \copyright Copyright 2024-2025 E-Service. Miass. Che.
  */
 
 #include <linux/interrupt.h>
@@ -18,11 +18,11 @@
 #include <linux/ktime.h>
 #include <linux/rtc.h>
 
-#include "z7.h"
+#include "esz7.h"
 
 struct wdata_t {
 	struct work_struct work;
-	struct Z7 *z7;
+	struct ESZ7 *esz7;
 	int irq_idx;
 };
 
@@ -40,17 +40,17 @@ void get_rtc_time(ktime_t *kt, struct rtc_time *t)
 static irqreturn_t irq_handler(int irq_idx, void *dev_id)
 {
 	struct wdata_t *wdata;
-	struct Z7 *z7;
+	struct ESZ7 *esz7;
 	struct device *dev;
 
-	z7 = (struct Z7 *)dev_id;
-	dev = z7->dev;
+	esz7 = (struct ESZ7 *)dev_id;
+	dev = esz7->dev;
 
 	wdata = kmalloc(sizeof(struct wdata_t), GFP_KERNEL);
 	DBG(3, "irq_idx: %d, wdata: %p\n", irq_idx, wdata);
 	if (wdata) {
 		INIT_WORK(&wdata->work, work_handler);
-		wdata->z7 = z7;
+		wdata->esz7 = esz7;
 		wdata->irq_idx = irq_idx;
 		DBG(3, "wdata->work: %p, wdata->irq_idx: %d\n", &wdata->work,
 		    wdata->irq_idx);
@@ -62,12 +62,12 @@ static irqreturn_t irq_handler(int irq_idx, void *dev_id)
 static void work_handler(struct work_struct *work)
 {
 	struct wdata_t *wdata;
-	struct Z7 *z7;
+	struct ESZ7 *esz7;
 
 	wdata = container_of(work, struct wdata_t, work);
-	z7 = wdata->z7;
-	DBG(3, "\nwdata: %p, work: %p, z7: %p, irq_idx: %d\n", wdata,
-	    &wdata->work, wdata->z7, wdata->irq_idx);
+	esz7 = wdata->esz7;
+	DBG(3, "\nwdata: %p, work: %p, esz7: %p, irq_idx: %d\n", wdata,
+	    &wdata->work, wdata->esz7, wdata->irq_idx);
 	do {
 		struct irq_desc *irqdsc;
 		irq_hw_number_t irqhw;
@@ -81,13 +81,13 @@ static void work_handler(struct work_struct *work)
 
 		// EPOLLPRI
 		if (irqhw == 61)
-			sysfs_notify(&z7->dev->kobj, NULL, "event1");
+			sysfs_notify(&esz7->dev->kobj, NULL, "event1");
 		else if (irqhw == 62)
-			sysfs_notify(&z7->dev->kobj, NULL, "event2");
+			sysfs_notify(&esz7->dev->kobj, NULL, "event2");
 		else if (irqhw == 63)
-			sysfs_notify(&z7->dev->kobj, NULL, "event3");
+			sysfs_notify(&esz7->dev->kobj, NULL, "event3");
 		else if (irqhw == 64)
-			sysfs_notify(&z7->dev->kobj, NULL, "event4");
+			sysfs_notify(&esz7->dev->kobj, NULL, "event4");
 
 	} while (0);
 
@@ -98,7 +98,7 @@ static void work_handler(struct work_struct *work)
 static int driver_probe(struct platform_device *pdev)
 {
 	struct device *dev;
-	struct Z7 *z7;
+	struct ESZ7 *esz7;
 	struct resource *res;
 	void __iomem *iomem;
 	int irq_idx, err, num;
@@ -111,42 +111,42 @@ static int driver_probe(struct platform_device *pdev)
 	dev = &pdev->dev;
 	dev_info(dev, "dev name:   %s\n", pdev->name);
 
-	z7 = devm_kcalloc(dev, 1, sizeof(*z7), GFP_KERNEL);
-	if (!z7)
+	esz7 = devm_kcalloc(dev, 1, sizeof(*esz7), GFP_KERNEL);
+	if (!esz7)
 		return -ENOMEM;
-	z7->dev = dev;
+	esz7->dev = dev;
 
-	for (int i = 0; i < ARRAY_SIZE(z7->irqs); i++)
-		z7->irqs[i] = -1;
+	for (int i = 0; i < ARRAY_SIZE(esz7->irqs); i++)
+		esz7->irqs[i] = -1;
 
-	err = of_property_read_string(dev->of_node, "name", &z7->of_name);
-	dev_info(dev, "name:       %s\n", z7->of_name);
+	err = of_property_read_string(dev->of_node, "name", &esz7->of_name);
+	dev_info(dev, "name:       %s\n", esz7->of_name);
 
 	err = of_property_read_string(dev->of_node, "version",
-				      &z7->of_version);
-	dev_info(dev, "version:    %s\n", z7->of_version);
+				      &esz7->of_version);
+	dev_info(dev, "version:    %s\n", esz7->of_version);
 
 	err = of_property_read_string(dev->of_node, "compatible",
-				      &z7->of_compatible);
-	dev_info(dev, "compatible: %s\n", z7->of_compatible);
+				      &esz7->of_compatible);
+	dev_info(dev, "compatible: %s\n", esz7->of_compatible);
 
-	err = of_property_read_u32(dev->of_node, "reg", &z7->of_reg);
-	dev_info(dev, "regs:       0x%08X\n", z7->of_reg);
+	err = of_property_read_u32(dev->of_node, "reg", &esz7->of_reg);
+	dev_info(dev, "regs:       0x%08X\n", esz7->of_reg);
 
 	num = of_property_count_u32_elems(dev->of_node, "interrupts");
-	if (num > ARRAY_SIZE(z7->of_interrupts))
-		num = ARRAY_SIZE(z7->of_interrupts);
+	if (num > ARRAY_SIZE(esz7->of_interrupts))
+		num = ARRAY_SIZE(esz7->of_interrupts);
 	if (num > 0)
 		err = of_property_read_u32_array(dev->of_node, "interrupts",
-						 z7->of_interrupts, num);
+						 esz7->of_interrupts, num);
 
-	buffersz = ARRAY_SIZE(z7->of_interrupts) * 11;
+	buffersz = ARRAY_SIZE(esz7->of_interrupts) * 11;
 	buffer = kzalloc(buffersz, GFP_KERNEL);
 	if (buffer) {
 		seq_buf_init(&seq_buffer, buffer, buffersz);
-		for (int i = 0; i < ARRAY_SIZE(z7->of_interrupts); i++)
+		for (int i = 0; i < ARRAY_SIZE(esz7->of_interrupts); i++)
 			seq_buf_printf(&seq_buffer, "%d ",
-				       z7->of_interrupts[i]);
+				       esz7->of_interrupts[i]);
 		seq_buffer.buffer[seq_buffer.len - 1] = '\0';
 	}
 	dev_info(dev, "interrupts: %s", buffer);
@@ -155,7 +155,7 @@ static int driver_probe(struct platform_device *pdev)
 	num = platform_irq_count(pdev);
 	dev_info(dev, "num of irq: %d (see /proc/interrupts)\n", num);
 
-	for (int i = 0; i < num && i < ARRAY_SIZE(z7->irqs); i++) {
+	for (int i = 0; i < num && i < ARRAY_SIZE(esz7->irqs); i++) {
 		irq_idx = platform_get_irq(pdev, i);
 		if (irq_idx < 0) {
 			dev_info(
@@ -166,18 +166,18 @@ static int driver_probe(struct platform_device *pdev)
 		}
 		dev_info(dev, "irq idx[%d]: %d\n", i, irq_idx);
 		err = devm_request_irq(dev, irq_idx, irq_handler, 0, pdev->name,
-				       z7);
+				       esz7);
 		if (err) {
 			dev_info(
 				dev,
 				"ERR:  devm_request_irq(dev, %d) failed (%d)\n",
 				irq_idx, err);
 		} else {
-			z7->irqs[i] = irq_idx;
+			esz7->irqs[i] = irq_idx;
 		}
 	}
 
-	platform_set_drvdata(pdev, z7);
+	platform_set_drvdata(pdev, esz7);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	iomem = devm_ioremap_resource(dev, res);
@@ -186,9 +186,9 @@ static int driver_probe(struct platform_device *pdev)
 			 PTR_ERR(iomem));
 		return (int)PTR_ERR(iomem);
 	}
-	z7->iomem = iomem;
+	esz7->iomem = iomem;
 
-	err = z7_create_sysfs_attributes(dev);
+	err = esz7_create_sysfs_attributes(dev);
 	if (err)
 		return err;
 
@@ -203,18 +203,18 @@ static void driver_remove(struct platform_device *pdev)
 #endif
 {
 	struct device *dev = &pdev->dev;
-	struct Z7 *z7 = (struct Z7 *)platform_get_drvdata(pdev);
+	struct ESZ7 *esz7 = (struct ESZ7 *)platform_get_drvdata(pdev);
 
 	dev_info(dev, "+++ removing driver...\n");
 
 	DBG(1, "%s\n", "flush_scheduled_work()");
 	flush_scheduled_work();
 
-	z7_remove_sysfs_attributes(dev);
-	for (int i = 0; i < ARRAY_SIZE(z7->irqs); i++) {
-		if (z7->irqs[i] < 0)
+	esz7_remove_sysfs_attributes(dev);
+	for (int i = 0; i < ARRAY_SIZE(esz7->irqs); i++) {
+		if (esz7->irqs[i] < 0)
 			continue;
-		devm_free_irq(dev, z7->irqs[i], NULL);
+		devm_free_irq(dev, esz7->irqs[i], NULL);
 	}
 	dev_info(dev, "+++ driver removed\n");
 
@@ -226,7 +226,7 @@ static void driver_remove(struct platform_device *pdev)
 
 static const struct of_device_id match_table[] = {
 	{
-		.compatible = "z7,ads125h01",
+		.compatible = "esz7,ads125h01",
 	},
 	{},
 };
@@ -239,6 +239,6 @@ static struct platform_driver thedriver = {
 
 module_platform_driver(thedriver);
 
-MODULE_AUTHOR("AVL <avl.mail.post@gmail.com>");
-MODULE_DESCRIPTION("Z7");
+MODULE_AUTHOR("AVL <lav@oil-service.com>");
+MODULE_DESCRIPTION("ESZ7");
 MODULE_LICENSE("GPL v2");

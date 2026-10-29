@@ -51,6 +51,7 @@ function add_local_mac_address()
     echo "OK"
 }
 
+
 #-------------------------------------------------
 function fix_memory_descr()
 {
@@ -170,7 +171,7 @@ function add_esz7_ads125()
 			reg = <0x43c00000 0x40>;\
 			interrupts = <0 29 1>, <0 30 1>, <0 31 1>, <0 32 1>;\
 			interrupt-parent = <&intc>;\
-			version = "3.0.1";\
+			version = "Ver. 3.0.2 Oct 22 2026";\
 		};\n'
 
         NUM=$(sed -n '/adc:/,/};/{//=;}' ${FN} | tail -n1)
@@ -185,6 +186,85 @@ function add_esz7_ads125()
     fi
 }
 
+#-------------------------------------------------
+function add_gpio_status_ok()
+{
+    return 0
+    FN="system-top.dts"
+    [ ! -f ${FN} ] && return
+
+    if awk '/&gpio0/ {in_block=1} in_block && /status = "okay";/ {found=1; exit} in_block && /\};/ {in_block=0} END {exit !found}' ${FN}; then
+        return;
+    fi
+    printf "%-15s - %s" "${FN}" "add gpio status okay ... "
+    desc='&gpio0 {\n    status = "okay";\n};\n'
+    echo -e "\n${desc}" >> ${FN}
+    if [ $? -ne 0 ]; then
+         echo "FAILED"
+         exit 1
+    fi
+    echo "OK"
+}
+
+#-------------------------------------------------
+function add_gpio_pinctrl()
+{
+    FN="${ZYNQ_DTSI_FILE}"
+    [ ! -f "${FN}" ] && return
+    if grep -q "&pinctrl0 " ${FN}; then
+        return;
+    fi
+        printf "%-15s - %s " "${FN}" "add gpio pinctrl ..."
+        desc='&pinctrl0 {
+	pinctrl_led: xme0724-20-led-mio13 {
+		mux {
+			function = "gpio0";
+			groups = "gpio0_13_grp";
+		};
+		conf {
+			pins = "MIO13";
+			io-standard = <1>;  /* LVCMOS 3.3V */
+			bias-disable;       /* Сброс Pull-Up в SLCR */
+			slew-rate = <0>;    /* Slow */
+		};
+	};
+};\n';
+    echo -e "\n${desc}" >> ${FN}
+    if [ $? -ne 0 ]; then
+         echo "FAILED"
+         exit 1
+    fi
+    echo "OK"
+}
+
+#-------------------------------------------------
+function add_gpio_leds()
+{
+    FN="${ZYNQ_DTSI_FILE}"
+    [ ! -f "${FN}" ] && return
+
+    if grep -q "compatible = \"gpio-leds\";" ${FN}; then
+        return;
+    fi
+    printf "%-15s - %s " "${FN}" "add gpio leds section ..."
+    desc='/ {
+    leds {
+        compatible = "gpio-leds";
+        status = "disabled";                // "okay"
+        user_led {
+            label = "xme0724_20_led_mio13";
+            gpios = <&gpio0 13 0>; 
+            default-state = "heartbeat";    // "off"
+        };
+    };
+};\n'
+    echo -e "\n${desc}" >> ${FN}
+    if [ $? -ne 0 ]; then
+         echo "FAILED"
+         exit 1
+    fi
+    echo "OK"
+}
 
 
 ############################################################
@@ -247,12 +327,15 @@ rm -f system.dts # странный файл от Vivado 2018 - не нужен
 # some fixes
 
 fix_ExtDev_version
-fix_intc_address_cells
 fix_memory_descr
+fix_intc_address_cells
 
 add_local_mac_address
 add_rtc
 add_esz7_ads125
+add_gpio_pinctrl
+add_gpio_leds
+add_gpio_status_ok
 
 # compiling
 cmd="gcc -I my_dts -E -nostdinc -I include -undef -D__DTS__ -x assembler-with-cpp -o system.dts system-top.dts"

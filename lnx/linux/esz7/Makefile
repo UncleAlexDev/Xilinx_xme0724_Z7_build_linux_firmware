@@ -1,8 +1,8 @@
 KDIR ?= /lib/modules/$(shell uname -r)/build
 
-all: z7.ko
+all: esz7.ko
 
-z7.ko:
+esz7.ko:
 	$(MAKE) -C $(KDIR) M=$(PWD)
 
 clean:

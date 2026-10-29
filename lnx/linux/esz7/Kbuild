@@ -1,2 +1,2 @@
-obj-m := z7.o
-z7-y := main.o sysfs.o
+obj-m := esz7.o
+esz7-y := main.o sysfs.o

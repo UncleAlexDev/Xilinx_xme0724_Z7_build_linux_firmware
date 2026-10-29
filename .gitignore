@@ -11,5 +11,8 @@ lnx/device_tree/system.dtb
 lnx/linux/uImage.bin
 vivado-files/artifacts
 
+lnx/rootfs/creation/rootfs-template.tar.bz2*.bak
 lnx/rootfs/creation/rootfs
 BOOT/xme072420-20*-*.zip
+boot_package_*.bak
+boot_package

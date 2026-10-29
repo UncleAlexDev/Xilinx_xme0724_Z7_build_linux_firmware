@@ -159,13 +159,18 @@ fi
 
 cat << EOF
 
+Используйте скрипт make_boot_pack.sh для подготовки пакета прошивки.
+$ make_boot_pack.sh
+
 Для сетевого конфигурирования xme0724-20 необходимо
 скопировать комплект загрузочных файлов на tftp-сервер.
 Например так (сервер - 192.168.1.32, /srv/tftp - рабочий каталог tftp-сервера):
+$ scp boot_package/* user@192.168.1.32:/srv/tftp/
+
+Или так:
   $ ls -ld BOOT     # убедиться в наличии готового BOOT
   $ scp BOOT/tftp/xme0724-20/* user@192.168.1.32:/srv/tftp/xme0724-20/
-
-Или используйте скрипт upload_boot_to_tftp.sh
+(используйте скрипт make_boot_pack.sh для подготовки boot_package)
 
 EOF
 
