@@ -53,7 +53,7 @@ find "${BOOT_PACKAGE_DIR}" -type d -exec chmod 750 {} \; || exit 1
 
 ######
 
-echo "packing everything ..."
+echo "packing all ..."
 cd ${BOOT_PACKAGE_DIR} || exit 1
 zip -r -9 -q "${BACKUP_NAME}.zip" "${BACKUP_NAME}" || exit 1
 [ $? -eq 0 ] && rm -rf "${BACKUP_NAME}" 1>/dev/null
